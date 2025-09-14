@@ -1,0 +1,7 @@
+webname,env,healthUrl,infoUrl,port,supportEmail
+User Service,Production,https://userservice.example.com/actuator/health,https://userservice.example.com/actuator/info,8080,support-user@example.com
+Order Service,Production,https://orderservice.example.com/actuator/health,https://orderservice.example.com/actuator/info,8081,support-order@example.com
+Payment Service,Staging,https://staging-payment.example.com/actuator/health,https://staging-payment.example.com/actuator/info,8082,support-payment@example.com
+Notification Service,Development,http://localhost:8083/actuator/health,http://localhost:8083/actuator/info,8083,dev-team@example.com
+Inventory Service,Production,https://inventory.example.com/actuator/health,https://inventory.example.com/actuator/info,8084,support-inventory@example.com
+local App,Local,http://127.0.0.1:8080/actuator/health,http://127.0.0.1:8080/actuator/info,8080,local-webapp.com

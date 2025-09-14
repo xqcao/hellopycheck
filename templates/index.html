@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Boot Health Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .check-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .check-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .check-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .check-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .timestamp {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .webapp-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .webapp-card.healthy {
+            border-left-color: #4CAF50;
+        }
+
+        .webapp-card.unhealthy {
+            border-left-color: #f44336;
+        }
+
+        .webapp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .webapp-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .env-badge {
+            background: #007bff;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .status-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-green {
+            background-color: #4CAF50;
+        }
+
+        .status-red {
+            background-color: #f44336;
+        }
+
+        .status-url {
+            color: #666;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        .git-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-size: 0.85em;
+        }
+
+        .git-info-item {
+            margin-bottom: 4px;
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            color: #666;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .error-message {
+            color: #f44336;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .webapp-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .contact-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏥 Spring Boot Health Monitor</h1>
+
+        <div class="check-section">
+            <button id="checkBtn" class="check-btn" onclick="performHealthCheck()">
+                🔍 Check All Applications
+            </button>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Checking applications...</p>
+        </div>
+
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        async function performHealthCheck() {
+            const checkBtn = document.getElementById('checkBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+
+            // Show loading state
+            checkBtn.disabled = true;
+            checkBtn.textContent = 'Checking...';
+            loading.style.display = 'block';
+            results.innerHTML = '';
+
+            try {
+                const response = await fetch('/check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data.results, data.timestamp);
+                } else {
+                    results.innerHTML = `
+                        <div class="webapp-card unhealthy">
+                            <h3>❌ Error</h3>
+                            <p>${data.error}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="webapp-card unhealthy">
+                        <h3>❌ Request Failed</h3>
+                        <p>Failed to perform health check: ${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                // Hide loading state
+                checkBtn.disabled = false;
+                checkBtn.textContent = '🔍 Check All Applications';
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayResults(webapps, timestamp) {
+            const results = document.getElementById('results');
+
+            if (webapps.length === 0) {
+                results.innerHTML = '<p>No applications found to check.</p>';
+                return;
+            }
+
+            let html = `
+                <div class="timestamp">Last checked: ${timestamp}</div>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Web Name</th>
+                            <th>Environment</th>
+                            <th>Health URL</th>
+                            <th>Info URL</th>
+                            <th>Port</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            webapps.forEach(webapp => {
+                html += `
+                    <tr>
+                        <td class="webname-cell" data-label="Web Name">${webapp.webname}</td>
+                        <td data-label="Environment">
+                            <span class="env-badge">${webapp.env}</span>
+                        </td>
+                        <td class="status-cell" data-label="Health URL">
+                            <div>
+                                <span class="status-indicator ${webapp.health_status ? 'status-green' : 'status-red'}"></span>
+                                ${webapp.health_status ? 'Healthy' : 'Unhealthy'}
+                            </div>
+                            <div class="status-url"><a href="${webapp.healthUrl}" >${webapp.healthUrl}</a></div>
+                            ${webapp.health_error ? `<div class="error-message">${webapp.health_error}</div>` : ''}
+                            ${webapp.health_status && webapp.git_info && Object.keys(webapp.git_info).length > 0 ? `
+                                <div class="git-info">
+                                    ${webapp.git_info.branch ? `<div class="git-info-item">Branch: ${webapp.git_info.branch}</div>` : ''}
+                                    ${webapp.git_info.commit ? `<div class="git-info-item">Commit: ${webapp.git_info.commit}</div>` : ''}
+                                    ${webapp.git_info.java_version ? `<div class="git-info-item">Java: ${webapp.git_info.java_version}</div>` : ''}
+                                </div>
+                            ` : ''}
+                        </td>
+                        <td class="status-cell" data-label="Info URL">
+                            <div>
+                                <span class="status-indicator ${webapp.info_status ? 'status-green' : 'status-red'}"></span>
+                                ${webapp.info_status ? 'Available' : 'Unavailable'}
+                            </div>
+                            <div class="status-url"><a href="${webapp.infoUrl}">${webapp.infoUrl}</a></div>
+                            ${webapp.info_error ? `<div class="error-message">${webapp.info_error}</div>` : ''}
+                        </td>
+                        <td class="port-cell" data-label="Port">${webapp.port}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            results.innerHTML = html;
+        }
+
+        // Optional: Auto-refresh every 5 minutes
+        // setInterval(performHealthCheck, 300000);
+    </script>
+</body>
+
+</html>
