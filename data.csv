@@ -1,4 +1,4 @@
-webname,env,healthUrl,infoUrl,port,supportEmail
+applicationName,env,healthUrl,infoUrl,port,supportEmail
 User Service,Production,https://userservice.example.com/actuator/health,https://userservice.example.com/actuator/info,8080,support-user@example.com
 Order Service,Production,https://orderservice.example.com/actuator/health,https://orderservice.example.com/actuator/info,8081,support-order@example.com
 Payment Service,Staging,https://staging-payment.example.com/actuator/health,https://staging-payment.example.com/actuator/info,8082,support-payment@example.com

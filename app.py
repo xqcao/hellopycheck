@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import csv
 import requests
 import json
@@ -15,7 +15,7 @@ def read_csv_data():
             reader = csv.DictReader(csvfile)
             for row in reader:
                 webapps.append({
-                    'webname': row.get('webname', '').strip(),
+                    'applicationName': row.get('applicationName', '').strip(),
                     'env': row.get('env', '').strip(),
                     'healthUrl': row.get('healthUrl', '').strip(),
                     'infoUrl': row.get('infoUrl', '').strip(),
@@ -29,8 +29,10 @@ def read_csv_data():
     
     return webapps
 
-def check_endpoint(url, timeout=10):
+def check_endpoint(url, timeout=1000):
     """Check if endpoint is accessible and return status and response data"""
+    print("checking .....",url)
+    time.sleep(2)
     try:
         response = requests.get(url, timeout=timeout)
         status_code = response.status_code
@@ -127,15 +129,41 @@ def index():
     """Home page with check button"""
     return render_template('index.html')
 
+@app.route('/applications', methods=['GET'])
+def get_applications():
+    """Get list of all applications for selection"""
+    webapps = read_csv_data()
+    applications = []
+    for webapp in webapps:
+        applications.append({
+            'applicationName': webapp['applicationName'],
+            'env': webapp['env']
+        })
+    return jsonify({'applications': applications})
+
 @app.route('/check', methods=['POST'])
-def check_all_webapps():
-    """Perform health checks on all webapps"""
+def check_webapps():
+    """Perform health checks on selected webapps or all if none selected"""
+    data = request.get_json() or {}
+    selected_applications = data.get('selectedApplications', [])
+    
     webapps = read_csv_data()
     
     if not webapps:
         return jsonify({
             'success': False,
             'error': 'No webapp data found',
+            'results': []
+        })
+    
+    # Filter webapps based on selection
+    if selected_applications:
+        webapps = [webapp for webapp in webapps if webapp['applicationName'] in selected_applications]
+    
+    if not webapps:
+        return jsonify({
+            'success': False,
+            'error': 'No applications selected or found',
             'results': []
         })
     
@@ -168,4 +196,4 @@ def check_all_webapps():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)
